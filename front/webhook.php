@@ -8,6 +8,6 @@ Session::checkRight('plugin_webhook_use', READ);
 
 Html::header(Webhook::getTypeName(Session::getPluralNumber()), $_SERVER['PHP_SELF'], 'config', 'GlpiPlugin\Webhook\WebhookMenu', 'webhook');
 
-Search::show(Webhook::class);
+Search::show("PluginWebhookWebhook");
 
 Html::footer();

@@ -257,5 +257,3 @@ SQL;
         return $webhooks;
     }
 }
-
-class_alias(UserWebhook::class, 'PluginWebhookUserWebhook');

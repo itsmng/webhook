@@ -144,6 +144,55 @@ SQL;
         global $CFG_GLPI;
 
         $this->initForm($ID, $options);
+
+        if (function_exists('renderTwigForm')) {
+            $typeValues = [];
+            foreach ($CFG_GLPI['notificationtemplates_types'] as $type) {
+                if ($item = getItemForItemtype($type)) {
+                    $typeValues[$type] = $item->getTypeName(1);
+                }
+            }
+
+            $form = [
+                'action'   => $this->getFormURL(),
+                'itemtype' => self::class,
+                'content'  => [
+                    $this->getTypeName(1) => [
+                        'visible' => true,
+                        'inputs'  => [
+                            __('Name') => [
+                                'type'  => 'text',
+                                'name'  => 'name',
+                                'value' => Html::entities_deep($this->fields['name'] ?? ''),
+                                'size'  => 50,
+                                'max'   => 255,
+                            ],
+                            __('Item type') => [
+                                'type'   => 'select',
+                                'name'   => 'itemtype',
+                                'values' => $typeValues,
+                                'value'  => $this->fields['itemtype'] ?? 'Ticket',
+                            ],
+                            __('Comment') => [
+                                'type'  => 'textarea',
+                                'name'  => 'comment',
+                                'value' => Html::entities_deep($this->fields['comment'] ?? ''),
+                                'rows'  => 3,
+                                'cols'  => 80,
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+
+            renderTwigForm($form, '', $this->fields);
+            return true;
+        }
+
+        return $this->renderLegacyForm($options, $CFG_GLPI);
+    }
+
+    private function renderLegacyForm(array $options, array $CFG_GLPI): bool {
         $this->showFormHeader($options);
 
         echo "<tr class='tab_bg_1'>";
@@ -241,5 +290,3 @@ SQL;
         return $tab;
     }
 }
-
-class_alias(Template::class, 'PluginWebhookTemplate');

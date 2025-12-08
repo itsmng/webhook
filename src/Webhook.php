@@ -142,6 +142,83 @@ SQL;
 
     public function showForm($ID, $options = []) {
         $this->initForm($ID, $options);
+
+        $this->fields['entities_id'] = $this->fields['entities_id'] ?? Session::getActiveEntity();
+        $this->fields['is_recursive'] = $this->fields['is_recursive'] ?? Session::getIsActiveEntityRecursive();
+
+        if (function_exists('renderTwigForm')) {
+            $headers = json_decode($this->fields['headers'] ?? '{}', true) ?: [];
+            $rand = mt_rand();
+
+            $form = [
+                'action'  => $this->getFormURL(),
+                'itemtype'=> self::class,
+                'content' => [
+                    $this->getTypeName(1) => [
+                        'visible' => true,
+                        'inputs'  => [
+                            __('Name') => [
+                                'type'  => 'text',
+                                'name'  => 'name',
+                                'value' => Html::entities_deep($this->fields['name'] ?? ''),
+                                'col_md' => 6,
+                                'col_lg' => 6,
+                                'max'   => 255,
+                            ],
+                            __('Active') => [
+                                'type'  => 'checkbox',
+                                'name'  => 'is_active',
+                                'value' => $this->fields['is_active'] ?? 1,
+                            ],
+                            __('URL') => [
+                                'type'  => 'text',
+                                'name'  => 'url',
+                                'value' => Html::entities_deep($this->fields['url'] ?? ''),
+                                'size'  => 80,
+                            ],
+                            __('HTTP method', 'webhook') => [
+                                'type'   => 'select',
+                                'name'   => 'http_method',
+                                'values' => ['POST' => 'POST', 'PUT' => 'PUT', 'PATCH' => 'PATCH', 'GET' => 'GET'],
+                                'value'  => $this->fields['http_method'] ?? 'POST',
+                            ],
+                            __('Timeout (s)', 'webhook') => [
+                                'type'  => 'number',
+                                'name'  => 'timeout',
+                                'min'   => 1,
+                                'max'   => 3600,
+                                'value' => $this->fields['timeout'] ?? Config::getValue('webhook_default_timeout', 5),
+                            ],
+                            __('Verify SSL', 'webhook') => [
+                                'type'  => 'checkbox',
+                                'name'  => 'verify_ssl',
+                                'value' => $this->fields['verify_ssl'] ?? Config::getValue('webhook_verify_ssl', 1),
+                            ],
+                            __('Comment') => [
+                                'type'  => 'textarea',
+                                'name'  => 'comment',
+                                'value' => Html::entities_deep($this->fields['comment'] ?? ''),
+                                'col_md' => 12,
+                                'col_lg' => 12,
+                            ],
+                            [
+                                'type'  => 'hidden',
+                                'name'  => 'headers_json',
+                                'value' => Html::entities_deep(json_encode($headers)),
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+
+            renderTwigForm($form, $this->renderHeadersBlockTwig($headers, $rand), $this->fields);
+            return true;
+        }
+
+        return $this->renderLegacyForm($options);
+    }
+
+    private function renderLegacyForm(array $options): bool {
         $this->showFormHeader($options);
 
         echo "<tr class='tab_bg_1'>";
@@ -161,7 +238,7 @@ SQL;
 
         echo "<tr class='tab_bg_1'>";
         echo "<td>" . __('HTTP method', 'webhook') . "</td><td>";
-        Dropdown::showFromArray('http_method', ['POST'=>'POST','PUT'=>'PUT','PATCH'=>'PATCH','GET'=>'GET'], [
+        Dropdown::showFromArray('http_method', ['POST' => 'POST', 'PUT' => 'PUT', 'PATCH' => 'PATCH', 'GET' => 'GET'], [
             'value' => $this->fields['http_method'] ?? 'POST'
         ]);
         echo "</td>";
@@ -180,44 +257,7 @@ SQL;
         echo "<td>" . __('HTTP Headers', 'webhook') . "</td><td colspan='3'>";
         $headers = json_decode($this->fields['headers'] ?? '{}', true) ?: [];
         $rand = mt_rand();
-        echo "<div id='webhook-headers-container-$rand'>";
-        echo "<table class='tab_cadre_fixe' id='webhook-headers-table-$rand'>";
-        echo "<thead><tr class='tab_bg_2'><th>" . __('Header Name', 'webhook') . "</th><th>" . __('Header Value', 'webhook') . "</th><th></th></tr></thead>";
-        echo "<tbody>";
-        if (!empty($headers)) {
-            $i = 0;
-            foreach ($headers as $key => $val) {
-                echo "<tr class='tab_bg_1'>";
-                echo "<td>" . Html::input("header_keys[$i]", ['value' => $key, 'size' => 30]) . "</td>";
-                echo "<td>" . Html::input("header_values[$i]", ['value' => $val, 'size' => 50]) . "</td>";
-                echo "<td><a href='#' class='webhook-remove-header' onclick='return webhookRemoveHeaderRow(this);'><i class='fas fa-trash'></i></a></td>";
-                echo "</tr>";
-                $i++;
-            }
-        }
-        echo "</tbody>";
-        echo "</table>";
-        echo "<a href='#' class='vsubmit' onclick='return webhookAddHeaderRow(\"webhook-headers-table-$rand\");'><i class='fas fa-plus'></i> " . __('Add header', 'webhook') . "</a>";
-        echo "</div>";
-        echo Html::scriptBlock("
-            var webhookHeaderIndex = " . count($headers) . ";
-            function webhookAddHeaderRow(tableId) {
-                var tbody = document.getElementById(tableId).getElementsByTagName('tbody')[0];
-                var tr = document.createElement('tr');
-                tr.className = 'tab_bg_1';
-                tr.innerHTML = '<td><input type=\"text\" name=\"header_keys[' + webhookHeaderIndex + ']\" size=\"30\"></td>' +
-                               '<td><input type=\"text\" name=\"header_values[' + webhookHeaderIndex + ']\" size=\"50\"></td>' +
-                               '<td><a href=\"#\" onclick=\"return webhookRemoveHeaderRow(this);\"><i class=\"fas fa-trash\"></i></a></td>';
-                tbody.appendChild(tr);
-                webhookHeaderIndex++;
-                return false;
-            }
-            function webhookRemoveHeaderRow(el) {
-                var tr = el.closest('tr');
-                tr.parentNode.removeChild(tr);
-                return false;
-            }
-        ");
+        echo $this->renderHeadersBlockLegacy($headers, $rand);
         echo "</td></tr>";
 
         echo "<tr class='tab_bg_1'>";
@@ -227,6 +267,116 @@ SQL;
 
         $this->showFormButtons($options);
         return true;
+    }
+
+    private function renderHeadersBlockTwig(array $headers, int $rand): string {
+        $tableId   = "webhook-headers-table-$rand";
+        $indexVar  = "webhookHeaderIndex$rand";
+        $addFn     = "webhookAddHeaderRow$rand";
+        $removeFn  = "webhookRemoveHeaderRow$rand";
+
+        $wrapperStart = "<div class='form-section mb-3' id='webhook-headers-container-$rand'><h2 class='form-section-header'>" . __('HTTP Headers', 'webhook') . "</h2><div class='form-section-content'>";
+        $wrapperEnd   = "</div></div>";
+
+        $htmlParts   = [];
+        $htmlParts[] = $wrapperStart;
+        $htmlParts[] = "<table class='table table-sm table-striped align-middle' id='$tableId'>";
+        $htmlParts[] = "<thead class='table-light'><tr><th>" . __('Header Name', 'webhook') . "</th><th>" . __('Header Value', 'webhook') . "</th><th class='text-end'></th></tr></thead>";
+        $htmlParts[] = "<tbody>";
+
+        $i = 0;
+        foreach ($headers as $key => $val) {
+            $htmlParts[] = "<tr>"
+                . "<td>" . Html::input("header_keys[$i]", ['value' => $key, 'size' => 30, 'class' => 'form-control form-control-sm']) . "</td>"
+                . "<td>" . Html::input("header_values[$i]", ['value' => $val, 'size' => 50, 'class' => 'form-control form-control-sm']) . "</td>"
+                . "<td class='text-end'><a href='#' class='btn btn-outline-danger btn-sm' onclick='return $removeFn(this);'><i class='fas fa-trash'></i></a></td>"
+                . "</tr>";
+            $i++;
+        }
+
+        $htmlParts[] = "</tbody>";
+        $htmlParts[] = "</table>";
+        $htmlParts[] = "<button class='btn btn-outline-secondary btn-sm mt-2 w-auto' style='max-width: 220px;' onclick=\"return $addFn('$tableId');\" type='button'><i class='fas fa-plus'></i> " . __('Add header', 'webhook') . "</button>";
+        $htmlParts[] = $wrapperEnd;
+
+        $script = <<<JS
+var $indexVar = {$i};
+function $addFn(tableId) {
+    var tbody = document.getElementById(tableId).getElementsByTagName('tbody')[0];
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td><input type="text" name="header_keys[' + $indexVar + ']" size="30" class="form-control form-control-sm"></td>' +
+                   '<td><input type="text" name="header_values[' + $indexVar + ']" size="50" class="form-control form-control-sm"></td>' +
+                   '<td class="text-end"><a href="#" class="btn btn-outline-danger btn-sm" onclick="return $removeFn(this);"><i class="fas fa-trash"></i></a></td>';
+    tbody.appendChild(tr);
+    $indexVar++;
+    return false;
+}
+function $removeFn(el) {
+    var tr = el.closest('tr');
+    if (tr && tr.parentNode) {
+        tr.parentNode.removeChild(tr);
+    }
+    return false;
+}
+JS;
+
+        $htmlParts[] = Html::scriptBlock($script);
+
+        return implode('', $htmlParts);
+    }
+
+    private function renderHeadersBlockLegacy(array $headers, int $rand): string {
+        $tableId   = "webhook-headers-table-$rand";
+        $indexVar  = "webhookHeaderIndex$rand";
+        $addFn     = "webhookAddHeaderRow$rand";
+        $removeFn  = "webhookRemoveHeaderRow$rand";
+
+        $htmlParts   = [];
+        $htmlParts[] = "<div id='webhook-headers-container-$rand'>";
+        $htmlParts[] = "<table class='tab_cadre_fixe' id='$tableId'>";
+        $htmlParts[] = "<thead class='tab_bg_2'><tr><th>" . __('Header Name', 'webhook') . "</th><th>" . __('Header Value', 'webhook') . "</th><th></th></tr></thead>";
+        $htmlParts[] = "<tbody>";
+
+        $i = 0;
+        foreach ($headers as $key => $val) {
+            $htmlParts[] = "<tr class='tab_bg_1'>"
+                . "<td>" . Html::input("header_keys[$i]", ['value' => $key, 'size' => 30]) . "</td>"
+                . "<td>" . Html::input("header_values[$i]", ['value' => $val, 'size' => 50]) . "</td>"
+                . "<td><a href='#' class='vsubmit' onclick='return $removeFn(this);'><i class='fas fa-trash'></i></a></td>"
+                . "</tr>";
+            $i++;
+        }
+
+        $htmlParts[] = "</tbody>";
+        $htmlParts[] = "</table>";
+        $htmlParts[] = "<a href='#' class='vsubmit' onclick=\"return $addFn('$tableId');\"><i class='fas fa-plus'></i> " . __('Add header', 'webhook') . "</a>";
+        $htmlParts[] = "</div>";
+
+        $script = <<<JS
+var $indexVar = {$i};
+function $addFn(tableId) {
+    var tbody = document.getElementById(tableId).getElementsByTagName('tbody')[0];
+    var tr = document.createElement('tr');
+    tr.className = 'tab_bg_1';
+    tr.innerHTML = '<td><input type="text" name="header_keys[' + $indexVar + ']" size="30"></td>' +
+                   '<td><input type="text" name="header_values[' + $indexVar + ']" size="50"></td>' +
+                   '<td><a href="#" class="vsubmit" onclick="return $removeFn(this);"><i class="fas fa-trash"></i></a></td>';
+    tbody.appendChild(tr);
+    $indexVar++;
+    return false;
+}
+function $removeFn(el) {
+    var tr = el.closest('tr');
+    if (tr && tr.parentNode) {
+        tr.parentNode.removeChild(tr);
+    }
+    return false;
+}
+JS;
+
+        $htmlParts[] = Html::scriptBlock($script);
+
+        return implode('', $htmlParts);
     }
 
     public function rawSearchOptions() {
@@ -316,5 +466,3 @@ SQL;
         return $tab;
     }
 }
-
-class_alias(Webhook::class, 'PluginWebhookWebhook');

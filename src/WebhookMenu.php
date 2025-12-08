@@ -61,5 +61,3 @@ class WebhookMenu extends CommonGLPI {
         return false;
     }
 }
-
-class_alias(WebhookMenu::class, 'PluginWebhookMenu');

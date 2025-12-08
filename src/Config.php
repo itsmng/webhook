@@ -113,6 +113,47 @@ SQL;
         $verifySsl = (bool) self::getValue('webhook_verify_ssl', 1);
         $enabled   = (bool) self::getValue('notifications_webhook', 1);
 
+        if (function_exists('renderTwigForm')) {
+            $form = [
+                'action'  => self::getFormURL(),
+                'content' => [
+                    __('Webhook settings', 'webhook') => [
+                        'visible' => true,
+                        'inputs'  => [
+                            __('Enable webhook notifications', 'webhook') => [
+                                'type'  => 'checkbox',
+                                'name'  => 'notifications_webhook',
+                                'value' => $enabled ? 1 : 0,
+                            ],
+                            __('Default timeout (seconds)', 'webhook') => [
+                                'type'  => 'number',
+                                'name'  => 'webhook_default_timeout',
+                                'value' => $timeout,
+                                'min'   => 1,
+                                'max'   => 3600,
+                            ],
+                            __('Verify SSL certificates', 'webhook') => [
+                                'type'  => 'checkbox',
+                                'name'  => 'webhook_verify_ssl',
+                                'value' => $verifySsl ? 1 : 0,
+                            ],
+                        ],
+                    ],
+                ],
+                'buttons' => [
+                    [
+                        'class' => 'btn btn-primary',
+                        'name'  => 'update',
+                        'value' => _sx('button', 'Save'),
+                        'type'  => 'submit',
+                    ],
+                ],
+            ];
+
+            renderTwigForm($form, '', ['id' => $this->fields['id'] ?? 0]);
+            return true;
+        }
+
         echo "<div class='spaced'>";
         echo "<div class='center'>";
         echo "<form method='post' action='" . self::getFormURL() . "'>";
@@ -151,6 +192,3 @@ SQL;
         return true;
     }
 }
-
-// Backward compatibility for legacy classname
-class_alias(Config::class, 'PluginWebhookConfig');

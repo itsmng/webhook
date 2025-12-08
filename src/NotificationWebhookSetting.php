@@ -36,6 +36,47 @@ class NotificationWebhookSetting extends NotificationSetting {
         $timeout   = (int) Config::getValue('webhook_default_timeout', 10);
         $verifySsl = (bool) Config::getValue('webhook_verify_ssl', 1);
 
+        if (function_exists('renderTwigForm')) {
+            $form = [
+                'action'  => self::getFormURL(),
+                'content' => [
+                    __('Webhook notification settings', 'webhook') => [
+                        'visible' => true,
+                        'inputs'  => [
+                            $this->getEnableLabel() => [
+                                'type'  => 'checkbox',
+                                'name'  => 'notifications_webhook',
+                                'value' => $enabled ? 1 : 0,
+                            ],
+                            __('Default timeout (seconds)', 'webhook') => [
+                                'type'  => 'number',
+                                'name'  => 'webhook_default_timeout',
+                                'min'   => 1,
+                                'max'   => 3600,
+                                'value' => $timeout,
+                            ],
+                            __('Verify SSL certificates', 'webhook') => [
+                                'type'  => 'checkbox',
+                                'name'  => 'webhook_verify_ssl',
+                                'value' => $verifySsl ? 1 : 0,
+                            ],
+                        ],
+                    ],
+                ],
+                'buttons' => [
+                    [
+                        'class' => 'btn btn-primary',
+                        'name'  => 'update',
+                        'value' => _sx('button', 'Save'),
+                        'type'  => 'submit',
+                    ],
+                ],
+            ];
+
+            renderTwigForm($form, '', []);
+            return true;
+        }
+
         echo "<form action='" . self::getFormURL() . "' method='post'>";
         echo "<table class='tab_cadre_fixe'>";
         echo "<tr class='tab_bg_1'><th colspan='2'>" . __('Webhook notification settings', 'webhook') . "</th></tr>";
@@ -64,5 +105,3 @@ class NotificationWebhookSetting extends NotificationSetting {
         return true;
     }
 }
-
-class_alias(NotificationWebhookSetting::class, 'PluginWebhookNotificationWebhookSetting');

@@ -9,6 +9,7 @@ use Html;
 use NotificationEvent;
 use Plugin;
 use Entity;
+use Session;
 
 class Notification extends CommonDBTM {
     use Permissions;
@@ -108,6 +109,107 @@ SQL;
         global $CFG_GLPI;
 
         $this->initForm($ID, $options);
+
+        $this->fields['entities_id'] = $this->fields['entities_id'] ?? Session::getActiveEntity();
+        $this->fields['is_recursive'] = $this->fields['is_recursive'] ?? Session::getIsActiveEntityRecursive();
+
+        if (function_exists('renderTwigForm')) {
+            $types = $CFG_GLPI['notificationtemplates_types'];
+            $typeValues = [];
+            foreach ($types as $type) {
+                if ($item = getItemForItemtype($type)) {
+                    $typeValues[$type] = $item->getTypeName(1);
+                }
+            }
+
+            $itemtype = $this->fields['itemtype'] ?? 'Ticket';
+            $target   = \NotificationTarget::getInstanceByType($itemtype);
+            $events   = $target ? $target->getAllEvents() : [Dropdown::EMPTY_VALUE];
+
+            $rand        = mt_rand();
+            $itemtypeId  = "dropdown_itemtype$rand";
+            $eventId     = "dropdown_event$rand";
+            $eventHookJs = sprintf(
+                "$.ajax({method: 'POST', url: '%s/plugins/webhook/ajax/dropdownEvent.php', data: {itemtype: $(this).val()}, dataType: 'json', success: function(data) { $('#%s').empty(); $('#%s').append('<option value=\"\">' + '%s' + '</option>'); $.each(data, function(key, value) { $('#%s').append('<option value=\"' + key + '\">' + value + '</option>'); }); }});",
+                $CFG_GLPI['root_doc'],
+                $eventId,
+                $eventId,
+                addslashes(Dropdown::EMPTY_VALUE),
+                $eventId
+            );
+
+            $form = [
+                'action'   => $this->getFormURL(),
+                'itemtype' => self::class,
+                'content'  => [
+                    $this->getTypeName(1) => [
+                        'visible' => true,
+                        'inputs'  => [
+                            __('Name') => [
+                                'type'  => 'text',
+                                'name'  => 'name',
+                                'value' => Html::entities_deep($this->fields['name'] ?? ''),
+                                'col_md' => 6,
+                                'col_lg' => 6,
+                            ],
+                            __('Active') => [
+                                'type'  => 'checkbox',
+                                'name'  => 'is_active',
+                                'value' => $this->fields['is_active'] ?? 1,
+                            ],
+                            _n('Type', 'Types', 1) => [
+                                'type'   => 'select',
+                                'name'   => 'itemtype',
+                                'id'     => $itemtypeId,
+                                'values' => $typeValues,
+                                'value'  => $itemtype,
+                                'hooks'  => [
+                                    'change' => $eventHookJs,
+                                ],
+                            ],
+                            NotificationEvent::getTypeName(1) => [
+                                'type'   => 'select',
+                                'name'   => 'event',
+                                'id'     => $eventId,
+                                'values' => $events,
+                                'value'  => $this->fields['event'] ?? '',
+                                'display_emptychoice' => true,
+                            ],
+                            _n('Webhook', 'Webhooks', 1, 'webhook') => [
+                                'type'      => 'select',
+                                'name'      => 'plugin_webhook_webhooks_id',
+                                'itemtype'  => Webhook::class,
+                                'value'     => $this->fields['plugin_webhook_webhooks_id'] ?? 0,
+                                'condition' => ['is_active' => 1],
+                                'display_emptychoice' => false,
+                            ],
+                            _n('Template', 'Templates', 1, 'webhook') => [
+                                'type'      => 'select',
+                                'name'      => 'plugin_webhook_templates_id',
+                                'itemtype'  => Template::class,
+                                'value'     => $this->fields['plugin_webhook_templates_id'] ?? 0,
+                                'display_emptychoice' => true,
+                            ],
+                            __('Comment') => [
+                                'type'  => 'textarea',
+                                'name'  => 'comment',
+                                'value' => Html::entities_deep($this->fields['comment'] ?? ''),
+                                'col_md' => 12,
+                                'col_lg' => 12,
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+
+            renderTwigForm($form, '', $this->fields);
+            return true;
+        }
+
+        return $this->renderLegacyForm($options, $CFG_GLPI);
+    }
+
+    private function renderLegacyForm(array $options, array $CFG_GLPI): bool {
         $this->showFormHeader($options);
 
         echo "<tr class='tab_bg_1'>";
@@ -248,5 +350,3 @@ SQL;
         return $tab;
     }
 }
-
-class_alias(Notification::class, 'PluginWebhookNotification');

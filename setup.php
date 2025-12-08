@@ -17,7 +17,7 @@ spl_autoload_register(function ($class) {
       'PluginWebhookWebhook'                  => GlpiPlugin\Webhook\Webhook::class,
       'PluginWebhookTemplate'                 => GlpiPlugin\Webhook\Template::class,
       'PluginWebhookTemplateTranslation'      => GlpiPlugin\Webhook\TemplateTranslation::class,
-      'PluginWebhookNotification'             => GlpiPlugin\Webhook\NotificationWebhook::class,
+      'PluginWebhookNotification'             => GlpiPlugin\Webhook\Notification::class,
       'PluginWebhookNotificationEventWebhook' => GlpiPlugin\Webhook\NotificationEventWebhook::class,
       'PluginWebhookWebhookTemplate'          => GlpiPlugin\Webhook\WebhookTemplate::class,
       'PluginWebhookUserWebhook'              => GlpiPlugin\Webhook\UserWebhook::class,
@@ -30,14 +30,7 @@ spl_autoload_register(function ($class) {
 });
 
 use GlpiPlugin\Webhook\Config;
-use GlpiPlugin\Webhook\NotificationEventWebhook;
 use GlpiPlugin\Webhook\Profile;
-use GlpiPlugin\Webhook\Permissions;
-use GlpiPlugin\Webhook\Webhook;
-use GlpiPlugin\Webhook\Template;
-use GlpiPlugin\Webhook\TemplateTranslation;
-use GlpiPlugin\Webhook\Notification;
-use GlpiPlugin\Webhook\WebhookTemplate;
 use GlpiPlugin\Webhook\UserWebhook;
 use GlpiPlugin\Webhook\WebhookMenu;
 

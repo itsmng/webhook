@@ -8,6 +8,14 @@ use Session;
 class NotificationWebhook implements NotificationInterface {
     use Permissions;
 
+    public static function getFormURL($full = false) {
+        return \Plugin::getWebDir('webhook') . '/front/webhook.form.php';
+    }
+
+    public static function getSearchURL($full = true) {
+        return \Plugin::getWebDir('webhook') . '/front/webhook.php';
+    }
+
     public function sendNotification($options = []) {
         $url         = $options['recipient'] ?? '';
         $method      = $options['sender'] ?? 'POST';
@@ -107,5 +115,3 @@ class NotificationWebhook implements NotificationInterface {
         return 1;
     }
 }
-
-class_alias(NotificationWebhook::class, 'PluginWebhookNotification');

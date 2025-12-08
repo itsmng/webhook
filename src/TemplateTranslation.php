@@ -5,6 +5,7 @@ namespace GlpiPlugin\Webhook;
 use CommonDBTM;
 use Dropdown;
 use Html;
+use Language;
 use NotificationTarget;
 use NotificationTemplate;
 use Plugin;
@@ -102,8 +103,6 @@ SQL;
      * @return string           Processed JSON payload
      */
     public static function processPayloadTemplate(string $template, array $data): string {
-        // Use GLPI's NotificationTemplate::process() for full tag compatibility
-        // This handles ##tag##, ##FOREACH##, ##IF##, ##ELSE##, etc.
         return NotificationTemplate::process($template, $data);
     }
 
@@ -131,7 +130,6 @@ SQL;
 
     public function showForm($ID, $options = []) {
         $this->initForm($ID, $options);
-        $this->showFormHeader($options);
 
         // Get parent template's itemtype
         $templateId = $this->fields['plugin_webhook_templates_id'] ?? ($options['plugin_webhook_templates_id'] ?? 0);
@@ -142,6 +140,64 @@ SQL;
                 $itemtype = $template->fields['itemtype'] ?: 'Ticket';
             }
         }
+
+        if (function_exists('renderTwigForm')) {
+            $rand = mt_rand();
+
+            ob_start();
+            self::showAvailableTags($itemtype);
+            $tagsHtml = ob_get_clean();
+
+            $additionnalHtml  = "<div class='center'>";
+            $additionnalHtml .= "<a class='btn btn-outline-secondary' href='#' onclick=\"$('#webhook-tags-$rand').toggle(); return false;\">";
+            $additionnalHtml .= "<i class='fas fa-tags'></i> " . __('Show available tags', 'webhook');
+            $additionnalHtml .= "</a></div>";
+            $additionnalHtml .= "<div id='webhook-tags-$rand' style='display:none;'>$tagsHtml</div>";
+
+            $form = [
+                'action'   => $this->getFormURL(),
+                'itemtype' => self::class,
+                'content'  => [
+                    $this->getTypeName(1) => [
+                        'visible' => true,
+                        'inputs'  => [
+                            __('Template') => [
+                                'type'     => 'select',
+                                'name'     => 'plugin_webhook_templates_id',
+                                'itemtype' => Template::class,
+                                'value'    => $this->fields['plugin_webhook_templates_id'] ?? 0,
+                                'display_emptychoice' => false,
+                            ],
+                            __('Language') => [
+                                'type'   => 'select',
+                                'name'   => 'language',
+                                'values' => Language::showLanguages([
+                                    'display_emptychoice' => true,
+                                    'emptylabel' => __('Default language'),
+                                ]),
+                                'value'  => $this->fields['language'] ?? '',
+                            ],
+                            __('Payload') => [
+                                'type'  => 'textarea',
+                                'name'  => 'payload_template',
+                                'value' => Html::entities_deep($this->fields['payload_template'] ?? self::getDefaultTemplate()),
+                                'rows'  => 15,
+                                'cols'  => 100,
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+
+            renderTwigForm($form, $additionnalHtml, $this->fields);
+            return true;
+        }
+
+        return $this->renderLegacyForm($options, $itemtype);
+    }
+
+    private function renderLegacyForm(array $options, string $itemtype): bool {
+        $this->showFormHeader($options);
 
         echo "<tr class='tab_bg_1'>";
         echo "<td>" . __('Template') . "</td><td>";
@@ -273,5 +329,3 @@ SQL;
         echo "</div>";
     }
 }
-
-class_alias(TemplateTranslation::class, 'PluginWebhookTemplateTranslation');

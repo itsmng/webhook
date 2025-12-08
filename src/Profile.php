@@ -151,5 +151,3 @@ SQL;
         return true;
     }
 }
-
-class_alias(Profile::class, 'PluginWebhookProfile');

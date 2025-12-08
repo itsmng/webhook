@@ -8,6 +8,6 @@ Session::checkRight('plugin_webhook_config', READ);
 
 Html::header(Notification::getTypeName(Session::getPluralNumber()), $_SERVER['PHP_SELF'], 'config', 'GlpiPlugin\Webhook\WebhookMenu', 'notification');
 
-Search::show(Notification::class);
+Search::show("PluginWebhookNotification");
 
 Html::footer();

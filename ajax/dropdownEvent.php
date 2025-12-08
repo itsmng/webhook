@@ -15,14 +15,14 @@ $itemtype = htmlspecialchars($itemtype, ENT_QUOTES, 'UTF-8');
 if (!empty($itemtype) && !class_exists($itemtype)) {
     $itemtype = '';
 }
+
 $events = [];
 if (!empty($itemtype)) {
-    // Basic defaults; can be extended by environment-specific notification targets
-    $events = [
-        'add'    => __('Create'),
-        'update' => __('Update'),
-        'delete' => __('Delete'),
-    ];
+    // Get events from NotificationTarget like core GLPI does
+    $target = \NotificationTarget::getInstanceByType($itemtype);
+    if ($target) {
+        $events = $target->getAllEvents();
+    }
 }
 
 header('Content-Type: application/json');

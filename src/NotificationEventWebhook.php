@@ -99,10 +99,8 @@ class NotificationEventWebhook extends NotificationEventAbstract implements Noti
     public static function send(array $data) {
         $sent = 0;
         foreach ($data as $row) {
-            $sent += NotificationWebhook::sendNotification($row);
+            $sent += (new NotificationWebhook())->sendNotification($row);
         }
         return $sent;
     }
 }
-
-class_alias(NotificationEventWebhook::class, 'PluginWebhookNotificationEventWebhook');
