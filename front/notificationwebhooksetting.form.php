@@ -1,10 +1,11 @@
 <?php
 
 use GlpiPlugin\Webhook\Config;
+use GlpiPlugin\Webhook\NotificationWebhookSetting;
 
 include('../../../inc/includes.php');
 
-Session::checkRight('plugin_webhook_config', UPDATE);
+Session::checkRight('config', UPDATE);
 
 if (isset($_POST['update'])) {
     Config::setValues([
@@ -15,9 +16,9 @@ if (isset($_POST['update'])) {
     Html::back();
 }
 
-Html::header(__('Webhook configuration', 'webhook'), $_SERVER['PHP_SELF'], 'config', 'GlpiPlugin\Webhook\WebhookMenu', 'config');
+Html::header(_n('Notification', 'Notifications', Session::getPluralNumber()), $_SERVER['PHP_SELF'], 'config', 'notification', 'config');
 
-$config = new Config();
-$config->showConfigForm();
+$setting = new NotificationWebhookSetting();
+$setting->display(['id' => 1]);
 
 Html::footer();

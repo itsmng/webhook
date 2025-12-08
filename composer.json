@@ -1,0 +1,14 @@
+{
+    "name": "itsmng/webhook",
+    "autoload": {
+        "psr-4": {
+            "GlpiPlugin\\Webhook\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "théodore clément",
+            "email": "213218350+thclemnt@users.noreply.github.com"
+        }
+    ]
+}

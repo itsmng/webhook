@@ -1,43 +1,50 @@
 <?php
 
-function plugin_skeleton_install() {
+use GlpiPlugin\Webhook\Config;
+use GlpiPlugin\Webhook\Notification;
+use GlpiPlugin\Webhook\NotificationEventWebhook;
+use GlpiPlugin\Webhook\Profile;
+use GlpiPlugin\Webhook\Template;
+use GlpiPlugin\Webhook\TemplateTranslation;
+use GlpiPlugin\Webhook\UserWebhook;
+use GlpiPlugin\Webhook\Webhook;
+use GlpiPlugin\Webhook\WebhookTemplate;
+
+/**
+ * Install webhook plugin schema and seed defaults.
+ */
+function plugin_webhook_install() {
    set_time_limit(900);
    ini_set('memory_limit', '2048M');
 
    $classesToInstall = [
-      'PluginSkeletonConfig',
-      'PluginSkeletonProfile',
+      Config::class,
+      Profile::class,
+      Webhook::class,
+      Template::class,
+      TemplateTranslation::class,
+      WebhookTemplate::class,
+      Notification::class,
+      UserWebhook::class,
    ];
 
    echo "<center>";
    echo "<table class='tab_cadre_fixe'>";
-   echo "<tr><th>".__("MySQL tables installation", "skeleton")."<th></tr>";
-
+   echo "<tr><th>".__("MySQL tables installation", "webhook")."<th></tr>";
    echo "<tr class='tab_bg_1'>";
    echo "<td align='center'>";
 
-   //load all classes
-   $dir  = Plugin::getPhpDir('skeleton') . "/inc/";
    foreach ($classesToInstall as $class) {
-      if ($plug = isPluginItemType($class)) {
-         $item = strtolower($plug['class']);
-         if (file_exists("$dir$item.class.php")) {
-            include_once ("$dir$item.class.php");
-         }
+      if (!call_user_func([$class, 'install'])) {
+         return false;
       }
    }
 
-   //install
-   foreach ($classesToInstall as $class) {
-      if ($plug = isPluginItemType($class)) {
-         $item =strtolower($plug['class']);
-         if (file_exists("$dir$item.class.php")) {
-            if (!call_user_func([$class,'install'])) {
-               return false;
-            }
-         }
-      }
-   }
+   // Seed default templates after all tables are created
+   Template::seedDefaultTemplates();
+
+   // Register notification mode on install to ensure mode exists before enabling rules
+   Notification_NotificationTemplate::registerMode('webhook', __('Webhook', 'webhook'), 'webhook');
 
    echo "</td>";
    echo "</tr>";
@@ -46,31 +53,30 @@ function plugin_skeleton_install() {
    return true;
 }
 
-function plugin_skeleton_uninstall() {
+/**
+ * Uninstall webhook plugin schema.
+ */
+function plugin_webhook_uninstall() {
    echo "<center>";
    echo "<table class='tab_cadre_fixe'>";
-   echo "<tr><th>".__("MySQL tables uninstallation", "fields")."<th></tr>";
-
+   echo "<tr><th>".__("MySQL tables uninstallation", "webhook")."<th></tr>";
    echo "<tr class='tab_bg_1'>";
    echo "<td align='center'>";
 
    $classesToUninstall = [
-      'PluginSkeletonConfig',
-      'PluginSkeletonProfile',
+      UserWebhook::class,
+      Notification::class,
+      WebhookTemplate::class,
+      TemplateTranslation::class,
+      Template::class,
+      Webhook::class,
+      Profile::class,
+      Config::class,
    ];
 
    foreach ($classesToUninstall as $class) {
-      if ($plug = isPluginItemType($class)) {
-
-         $dir  = Plugin::getPhpDir('skeleton') . "/inc/";
-         $item = strtolower($plug['class']);
-
-         if (file_exists("$dir$item.class.php")) {
-            include_once ("$dir$item.class.php");
-            if (!call_user_func([$class,'uninstall'])) {
-               return false;
-            }
-         }
+      if (!call_user_func([$class, 'uninstall'])) {
+         return false;
       }
    }
 

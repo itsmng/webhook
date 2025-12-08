@@ -2,26 +2,26 @@ msgid ""
 msgstr ""
 "Project-Id-Version: webhook 1.0.0\n"
 "POT-Creation-Date: 2025-12-08 10:09+0100\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"PO-Revision-Date: 2025-12-08 10:10+0100\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: French\n"
+"Language: fr_FR\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
 #: ajax/dropdownEvent.php:22
 msgid "Create"
-msgstr ""
+msgstr "Créer"
 
 #: ajax/dropdownEvent.php:23
 msgid "Update"
-msgstr ""
+msgstr "Mettre à jour"
 
 #: ajax/dropdownEvent.php:24
 msgid "Delete"
-msgstr ""
+msgstr "Supprimer"
 
 #: setup.php:86 src/UserWebhook.php:116 src/UserWebhook.php:188
 #: src/WebhookTemplate.php:69 src/Webhook.php:23 src/Profile.php:89
@@ -29,319 +29,319 @@ msgstr ""
 #: front/webhook.center.php:16
 msgid "Webhook"
 msgid_plural "Webhooks"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Webhook"
+msgstr[1] "Webhooks"
 
 #: src/TemplateTranslation.php:23 src/TemplateTranslation.php:260
 #: src/Template.php:170
 msgid "Webhook template translation"
 msgid_plural "Webhook template translations"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Traduction de modèle webhook"
+msgstr[1] "Traductions de modèles webhook"
 
 #: src/TemplateTranslation.php:82
 msgid "Payload must be valid JSON"
-msgstr ""
+msgstr "La charge utile doit être un JSON valide"
 
 #: src/TemplateTranslation.php:147 src/WebhookTemplate.php:81
 #: src/Notification.php:152 src/Notification.php:234
 msgid "Template"
 msgid_plural "Templates"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Modèle"
+msgstr[1] "Modèles"
 
 #: src/TemplateTranslation.php:154
 msgid "Language"
-msgstr ""
+msgstr "Langue"
 
 #: src/TemplateTranslation.php:158 src/TemplateTranslation.php:263
 msgid "Default language"
-msgstr ""
+msgstr "Langue par défaut"
 
 #: src/TemplateTranslation.php:167
 msgid "Show available tags"
-msgstr ""
+msgstr "Afficher les balises disponibles"
 
 #: src/TemplateTranslation.php:195
 msgid "No tags available for this type"
-msgstr ""
+msgstr "Aucune balise disponible pour ce type"
 
 #: src/TemplateTranslation.php:204
 msgid "Tag"
-msgstr ""
+msgstr "Balise"
 
 #: src/TemplateTranslation.php:205 src/TemplateTranslation.php:232
 msgid "Label"
-msgstr ""
+msgstr "Libellé"
 
 #: src/TemplateTranslation.php:206
 msgid "Event"
 msgid_plural "Events"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Événement"
+msgstr[1] "Événements"
 
 #: src/TemplateTranslation.php:207 src/Template.php:211
 #: src/Notification.php:122 src/Notification.php:199
 msgid "Type"
 msgid_plural "Types"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Type"
+msgstr[1] "Types"
 
 #: src/TemplateTranslation.php:221
 msgid "All"
-msgstr ""
+msgstr "Tous"
 
 #: src/TemplateTranslation.php:226
 msgid "List of values"
-msgstr ""
+msgstr "Liste de valeurs"
 
 #: src/TemplateTranslation.php:226
 msgid "Single value"
-msgstr ""
+msgstr "Valeur unique"
 
 #: src/TemplateTranslation.php:232
 #, php-format
 msgid "%1$s: %2$s"
-msgstr ""
+msgstr "%1$s : %2$s"
 
 #: src/TemplateTranslation.php:270 src/UserWebhook.php:134
 msgctxt "Add"
 msgid "button"
-msgstr ""
+msgstr "Ajouter"
 
 #: src/NotificationWebhook.php:53
 msgid "No active webhook found to test"
-msgstr ""
+msgstr "Aucun webhook actif trouvé pour le test"
 
 #: src/NotificationWebhook.php:100
 #, php-format
 msgid "Webhook error: %s"
-msgstr ""
+msgstr "Erreur webhook : %s"
 
 #: src/NotificationWebhook.php:104
 #, php-format
 msgid "Webhook HTTP error %s"
-msgstr ""
+msgstr "Erreur HTTP webhook %s"
 
 #: src/UserWebhook.php:29
 msgid "User webhook"
 msgid_plural "User webhooks"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Webhook utilisateur"
+msgstr[1] "Webhooks utilisateur"
 
 #: src/UserWebhook.php:80 src/WebhookMenu.php:12 src/WebhookMenu.php:24
 #: front/webhook.center.php:12
 msgid "Webhooks"
-msgstr ""
+msgstr "Webhooks"
 
 #: src/UserWebhook.php:113
 msgid "Add a webhook to user"
-msgstr ""
+msgstr "Ajouter un webhook à l'utilisateur"
 
 #: src/UserWebhook.php:126 src/UserWebhook.php:190 src/WebhookTemplate.php:97
 #: src/Webhook.php:152 src/Webhook.php:270 src/Notification.php:117
 #: src/Notification.php:217
 msgid "Active"
-msgstr ""
+msgstr "Actif"
 
 #: src/UserWebhook.php:189 src/Webhook.php:158 src/Webhook.php:254
 msgid "URL"
-msgstr ""
+msgstr "URL"
 
 #: src/UserWebhook.php:207
 msgid "Unknown"
-msgstr ""
+msgstr "Inconnu"
 
 #: src/UserWebhook.php:217
 msgid "No webhook assigned to this user"
-msgstr ""
+msgstr "Aucun webhook assigné à cet utilisateur"
 
 #: src/Template.php:23 front/webhook.center.php:21
 msgid "Webhook template"
 msgid_plural "Webhook templates"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Modèle webhook"
+msgstr[1] "Modèles webhook"
 
 #: src/Template.php:86
 msgid "Auto-generated default template"
-msgstr ""
+msgstr "Modèle par défaut généré automatiquement"
 
 #: src/Template.php:150 src/Template.php:201 src/Webhook.php:148
 #: src/Webhook.php:244 src/Notification.php:114 src/Notification.php:189
 msgid "Name"
-msgstr ""
+msgstr "Nom"
 
 #: src/Template.php:155 src/WebhookTemplate.php:76
 msgid "Item type"
-msgstr ""
+msgstr "Type d'élément"
 
 #: src/Template.php:160 src/Webhook.php:224 src/Notification.php:169
 msgid "Comment"
-msgstr ""
+msgstr "Commentaire"
 
 #: src/Template.php:194 src/Webhook.php:237 src/Notification.php:182
 msgid "Characteristics"
-msgstr ""
+msgstr "Caractéristiques"
 
 #: src/Template.php:219 src/Webhook.php:294
 msgid "Comments"
-msgstr ""
+msgstr "Commentaires"
 
 #: src/Template.php:227 src/Webhook.php:302
 msgid "Last update"
-msgstr ""
+msgstr "Dernière mise à jour"
 
 #: src/Template.php:236 src/Webhook.php:311
 msgid "Creation date"
-msgstr ""
+msgstr "Date de création"
 
 #: src/Config.php:20 front/config.form.php:18 front/webhook.center.php:31
 msgid "Webhook configuration"
 msgid_plural "Webhook configurations"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Configuration webhook"
+msgstr[1] "Configurations webhook"
 
 #: src/Config.php:120
 msgid "Webhook settings"
-msgstr ""
+msgstr "Paramètres webhook"
 
 #: src/Config.php:123 src/NotificationWebhookSetting.php:22
 msgid "Enable webhook notifications"
-msgstr ""
+msgstr "Activer les notifications webhook"
 
 #: src/Config.php:130 src/NotificationWebhookSetting.php:49
 msgid "Default timeout (seconds)"
-msgstr ""
+msgstr "Délai d'attente par défaut (secondes)"
 
 #: src/Config.php:135 src/NotificationWebhookSetting.php:54
 msgid "Verify SSL certificates"
-msgstr ""
+msgstr "Vérifier les certificats SSL"
 
 #: src/Config.php:143 src/Profile.php:145 src/NotificationWebhookSetting.php:59
 msgctxt "Save"
 msgid "button"
-msgstr ""
+msgstr "Enregistrer"
 
 #: src/WebhookMenu.php:53
 msgid "Configuration"
-msgstr ""
+msgstr "Configuration"
 
 #: src/WebhookTemplate.php:18
 msgid "Webhook template binding"
 msgid_plural "Webhook template bindings"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Liaison de modèle webhook"
+msgstr[1] "Liaisons de modèles webhook"
 
 #: src/WebhookTemplate.php:88
 msgid "Notification (optional)"
-msgstr ""
+msgstr "Notification (optionnel)"
 
 #: src/Webhook.php:100
 msgid "Invalid URL"
-msgstr ""
+msgstr "URL invalide"
 
 #: src/Webhook.php:163 src/Webhook.php:262
 msgid "HTTP method"
-msgstr ""
+msgstr "Méthode HTTP"
 
 #: src/Webhook.php:168 src/Webhook.php:278
 msgid "Timeout (s)"
-msgstr ""
+msgstr "Délai d'attente (s)"
 
 #: src/Webhook.php:173 src/Webhook.php:286
 msgid "Verify SSL"
-msgstr ""
+msgstr "Vérifier SSL"
 
 #: src/Webhook.php:180
 msgid "HTTP Headers"
-msgstr ""
+msgstr "En-têtes HTTP"
 
 #: src/Webhook.php:185
 msgid "Header Name"
-msgstr ""
+msgstr "Nom d'en-tête"
 
 #: src/Webhook.php:185
 msgid "Header Value"
-msgstr ""
+msgstr "Valeur d'en-tête"
 
 #: src/Webhook.php:200
 msgid "Add header"
-msgstr ""
+msgstr "Ajouter un en-tête"
 
 #: src/Profile.php:23
 msgid "Webhook right"
 msgid_plural "Webhook rights"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Droit webhook"
+msgstr[1] "Droits webhook"
 
 #: src/Profile.php:110
 msgid "Configure webhooks"
-msgstr ""
+msgstr "Configurer les webhooks"
 
 #: src/Profile.php:112 src/Profile.php:119
 msgid "Read"
-msgstr ""
+msgstr "Lire"
 
 #: src/Profile.php:112 src/Profile.php:119
 msgid "Write"
-msgstr ""
+msgstr "Écrire"
 
 #: src/Profile.php:117
 msgid "Use webhooks"
-msgstr ""
+msgstr "Utiliser les webhooks"
 
 #: src/Profile.php:140
 msgid "General"
-msgstr ""
+msgstr "Général"
 
 #: src/Notification.php:24 front/webhook.center.php:26
 msgid "Webhook notification rule"
 msgid_plural "Webhook notification rules"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Règle de notification webhook"
+msgstr[1] "Règles de notification webhook"
 
 #: src/Notification.php:161
 msgid "Entity"
-msgstr ""
+msgstr "Entité"
 
 #: src/Notification.php:164
 msgid "Recursive"
-msgstr ""
+msgstr "Récursif"
 
 #: src/NotificationWebhookSetting.php:14
 msgid "Webhook notifications configuration"
-msgstr ""
+msgstr "Configuration des notifications webhook"
 
 #: src/NotificationWebhookSetting.php:41
 msgid "Webhook notification settings"
-msgstr ""
+msgstr "Paramètres des notifications webhook"
 
 #: hook.php:33
 msgid "MySQL tables installation"
-msgstr ""
+msgstr "Installation des tables MySQL"
 
 #: hook.php:62
 msgid "MySQL tables uninstallation"
-msgstr ""
+msgstr "Désinstallation des tables MySQL"
 
 #: front/notificationwebhooksetting.form.php:19
 msgid "Notification"
 msgid_plural "Notifications"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Notification"
+msgstr[1] "Notifications"
 
 #: front/webhook.center.php:39
 msgid "Webhook administration"
-msgstr ""
+msgstr "Administration des webhooks"
 
 #: front/userwebhook.form.php:14
 msgid "Webhook assigned to user"
-msgstr ""
+msgstr "Webhook assigné à l'utilisateur"
 
 #: front/userwebhook.form.php:21
 msgid "Item updated successfully"
-msgstr ""
+msgstr "Élément mis à jour avec succès"
 
 #: front/userwebhook.form.php:28 front/userwebhook.form.php:35
 msgid "Item deleted successfully"
-msgstr ""
+msgstr "Élément supprimé avec succès"
