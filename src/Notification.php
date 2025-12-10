@@ -129,6 +129,7 @@ SQL;
             $rand        = mt_rand();
             $itemtypeId  = "dropdown_itemtype$rand";
             $eventId     = "dropdown_event$rand";
+            $templateId  = "dropdown_template$rand";
             $eventHookJs = sprintf(
                 "$.ajax({method: 'POST', url: '%s/plugins/webhook/ajax/dropdownEvent.php', data: {itemtype: $(this).val()}, dataType: 'json', success: function(data) { $('#%s').empty(); $('#%s').append('<option value=\"\">' + '%s' + '</option>'); $.each(data, function(key, value) { $('#%s').append('<option value=\"' + key + '\">' + value + '</option>'); }); }});",
                 $CFG_GLPI['root_doc'],
@@ -137,6 +138,14 @@ SQL;
                 addslashes(Dropdown::EMPTY_VALUE),
                 $eventId
             );
+            $templateHookJs = sprintf(
+                "$.ajax({method: 'POST', url: '%s/plugins/webhook/ajax/dropdownTemplate.php', data: {itemtype: $(this).val(), value: $('#%s').val()}, success: function(html) { var select = $(html).find('select').first(); if (select.length) { select.attr('id', '%s').attr('name', 'plugin_webhook_templates_id'); $('#%s').replaceWith(select); } }});",
+                $CFG_GLPI['root_doc'],
+                $templateId,
+                $templateId,
+                $templateId
+            );
+            $changeHooksJs = $eventHookJs . $templateHookJs;
 
             $form = [
                 'action'   => $this->getFormURL(),
@@ -164,7 +173,7 @@ SQL;
                                 'values' => $typeValues,
                                 'value'  => $itemtype,
                                 'hooks'  => [
-                                    'change' => $eventHookJs,
+                                    'change' => $changeHooksJs,
                                 ],
                             ],
                             NotificationEvent::getTypeName(1) => [
@@ -186,8 +195,10 @@ SQL;
                             _n('Template', 'Templates', 1, 'webhook') => [
                                 'type'      => 'select',
                                 'name'      => 'plugin_webhook_templates_id',
+                                'id'        => $templateId,
                                 'itemtype'  => Template::class,
                                 'value'     => $this->fields['plugin_webhook_templates_id'] ?? 0,
+                                'condition' => ['itemtype' => $itemtype],
                                 'display_emptychoice' => true,
                             ],
                             __('Comment') => [
@@ -233,6 +244,17 @@ SQL;
             $CFG_GLPI["root_doc"] . "/ajax/dropdownNotificationEvent.php",
             $params
         );
+        // update template list when itemtype changes
+        $templateParams = [
+            'itemtype' => '__VALUE__',
+            'value'    => $this->fields['plugin_webhook_templates_id'] ?? 0,
+        ];
+        Ajax::updateItemOnSelectEvent(
+            "dropdown_itemtype$rand",
+            "show_templates",
+            $CFG_GLPI["root_doc"] . "/plugins/webhook/ajax/dropdownTemplate.php",
+            $templateParams
+        );
         echo "</td>";
         echo "<td>" . NotificationEvent::getTypeName(1) . "</td><td>";
         echo "<span id='show_events'>";
@@ -252,11 +274,15 @@ SQL;
         ]);
         echo "</td>";
         echo "<td>" . __('Template', 'webhook') . "</td><td>";
+        echo "<span id='show_templates'>";
         Dropdown::show('PluginWebhookTemplate', [
             'name' => 'plugin_webhook_templates_id',
             'value' => $this->fields['plugin_webhook_templates_id'] ?? 0,
-            'comments' => false
+            'comments' => false,
+            'condition' => ['itemtype' => $this->fields['itemtype'] ?? 'Ticket'],
+            'display_emptychoice' => true
         ]);
+        echo "</span>";
         echo "</td></tr>";
 
         echo "<tr class='tab_bg_1'>";
