@@ -102,7 +102,6 @@ class NotificationWebhook implements NotificationInterface {
         curl_exec($curl);
         $error = curl_error($curl);
         $status = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        curl_close($curl);
 
         if ($error) {
             Session::addMessageAfterRedirect(sprintf(__('Webhook error: %s', 'webhook'), $error), false, ERROR);

@@ -103,7 +103,40 @@ SQL;
      * @return string           Processed JSON payload
      */
     public static function processPayloadTemplate(string $template, array $data): string {
-        return NotificationTemplate::process($template, $data);
+        $decoded = json_decode($template);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return NotificationTemplate::process($template, $data);
+        }
+
+        $processed = self::processDecodedPayloadTemplate($decoded, $data);
+
+        return json_encode($processed, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    }
+
+    private static function processDecodedPayloadTemplate($value, array $data) {
+        if (is_string($value)) {
+            return NotificationTemplate::process($value, $data);
+        }
+
+        if (is_array($value)) {
+            return array_map(
+                static fn($item) => self::processDecodedPayloadTemplate($item, $data),
+                $value
+            );
+        }
+
+        if (!is_object($value)) {
+            return $value;
+        }
+
+        $processed = new \stdClass();
+        foreach (get_object_vars($value) as $key => $item) {
+            $processedKey = NotificationTemplate::process($key, $data);
+            $processed->{$processedKey} = self::processDecodedPayloadTemplate($item, $data);
+        }
+
+        return $processed;
     }
 
     /**

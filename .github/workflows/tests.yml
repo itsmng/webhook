@@ -1,0 +1,86 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  atoum:
+    name: Atoum (${{ matrix.db.label }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        db:
+          - image: mariadb:11.8
+            label: MariaDB 11.8
+            healthcheck: mariadb-admin ping
+          - image: mysql:8.4
+            label: MySQL 8.4
+            healthcheck: mysqladmin ping
+
+    env:
+      DB_DATABASE: test_db
+      DB_USER: test
+      DB_PASSWORD: test
+      ITSM_CORE_DIR: ${{ github.workspace }}/itsm-ng
+
+    services:
+      db:
+        image: ${{ matrix.db.image }}
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_USER: ${{ env.DB_USER }}
+          MYSQL_PASSWORD: ${{ env.DB_PASSWORD }}
+          MYSQL_DATABASE: ${{ env.DB_DATABASE }}
+          MYSQL_ROOT_PASSWORD: ${{ env.DB_PASSWORD }}
+        options: --health-cmd "${{ matrix.db.healthcheck }}" --health-interval 5s --health-timeout 3s --health-retries 20
+
+    steps:
+      - name: Checkout ITSM-ng
+        uses: actions/checkout@v6
+        with:
+          repository: itsmng/itsm-ng
+          path: itsm-ng
+
+      - name: Checkout webhook plugin
+        uses: actions/checkout@v6
+        with:
+          path: itsm-ng/plugins/webhook
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv
+          coverage: none
+
+      - name: Install NodeJS
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Install ITSM-ng dependencies
+        working-directory: ${{ env.ITSM_CORE_DIR }}
+        run: export NODE_OPTIONS=--openssl-legacy-provider && php bin/console dependencies install
+
+      - name: Install ITSM-ng test database
+        working-directory: ${{ env.ITSM_CORE_DIR }}
+        run: php bin/console itsmng:database:install --config-dir="$ITSM_CORE_DIR/tests/config" -H 127.0.0.1 -u "$DB_USER" -p "$DB_PASSWORD" -d "$DB_DATABASE" -n
+
+      - name: Run webhook plugin tests
+        working-directory: ${{ env.ITSM_CORE_DIR }}
+        run: |
+          vendor/bin/atoum \
+            -p 'php -d memory_limit=512M' \
+            --debug \
+            --force-terminal \
+            --use-dot-report \
+            --bootstrap-file plugins/webhook/tests/bootstrap.php \
+            --fail-if-skipped-methods \
+            --no-code-coverage \
+            --max-children-number 1 \
+            -d plugins/webhook/tests/units

@@ -21,6 +21,7 @@ spl_autoload_register(function ($class) {
       'PluginWebhookNotificationEventWebhook' => GlpiPlugin\Webhook\NotificationEventWebhook::class,
       'PluginWebhookWebhookTemplate' => GlpiPlugin\Webhook\WebhookTemplate::class,
       'PluginWebhookUserWebhook' => GlpiPlugin\Webhook\UserWebhook::class,
+      'PluginWebhookNotificationWebhook' => GlpiPlugin\Webhook\NotificationWebhook::class,
       'PluginWebhookNotificationWebhookSetting' => GlpiPlugin\Webhook\NotificationWebhookSetting::class,
       'PluginWebhookMenu' => GlpiPlugin\Webhook\WebhookMenu::class,
    ];
