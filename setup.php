@@ -2,7 +2,7 @@
 
 global $CFG_GLPI;
 
-define('WEBHOOK_VERSION', '1.0.1');
+define('WEBHOOK_VERSION', '1.0.2');
 define('WEBHOOK_ITSMNG_MIN_VERSION', '1.6');
 
 // Inject the host autoloader and register our PSR-4 namespace (same pattern as callmanager)
