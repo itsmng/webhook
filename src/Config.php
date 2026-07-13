@@ -7,7 +7,6 @@ use Dropdown;
 use Html;
 use Plugin;
 use Session;
-use Toolbox;
 
 class Config extends CommonDBTM {
     use Permissions;

@@ -7,7 +7,6 @@ use Dropdown;
 use Html;
 use Plugin;
 use Session;
-use Toolbox;
 
 class Webhook extends CommonDBTM {
     use Permissions;
@@ -108,7 +107,6 @@ SQL;
         }
         $input['http_method'] = strtoupper($input['http_method'] ?? 'POST');
 
-
         if (isset($input['header_keys']) && isset($input['header_values'])) {
             $headers = [];
             foreach ($input['header_keys'] as $i => $key) {
@@ -121,23 +119,23 @@ SQL;
             $input['headers'] = json_encode($headers);
             unset($input['header_keys'], $input['header_values']);
         } else {
-            $input['headers'] = self::normalizeHeaders($input['headers'] ?? $input['headers_json'] ?? null);
+            $headers = $input['headers'] ?? $input['headers_json'] ?? null;
+            if (is_array($headers)) {
+                $headers = json_encode($headers);
+            } elseif (is_string($headers)) {
+                json_decode($headers);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    $headers = '[]';
+                }
+            } else {
+                $headers = '[]';
+            }
+            $input['headers'] = $headers;
         }
 
         $input['timeout'] = (int)($input['timeout'] ?? Config::getValue('webhook_default_timeout', 5));
         $input['verify_ssl'] = isset($input['verify_ssl']) ? (int)$input['verify_ssl'] : (int)Config::getValue('webhook_verify_ssl', 1);
         return $input;
-    }
-
-    private static function normalizeHeaders($headers) {
-        if (is_array($headers)) {
-            return json_encode($headers);
-        }
-        json_decode($headers);
-        if (is_string($headers) && json_last_error() === JSON_ERROR_NONE) {
-            return $headers;
-        }
-        return json_encode([]);
     }
 
     public function showForm($ID, $options = []) {

@@ -24,10 +24,16 @@ jobs:
 
       - name: Build project
         run: |
-          cd /home/runner/work/webhook/
-          cd webhook && composer install --no-dev && cd ..
-          rm -r webhook/tools webhook/.git* webhook/composer.*
-          tar -zcvf webhook-${{ github.ref_name }}.tgz webhook
+          composer install --working-dir=webhook --no-dev
+          rm -rf \
+            webhook/.atoum.php \
+            webhook/.github \
+            webhook/.git \
+            webhook/.gitignore \
+            webhook/composer.* \
+            webhook/tests \
+            webhook/tools
+          tar -czf webhook-${{ github.ref_name }}.tgz webhook
 
       - name: Upload release
         uses: actions/upload-artifact@v4

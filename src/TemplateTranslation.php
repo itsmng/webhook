@@ -10,7 +10,6 @@ use NotificationTarget;
 use NotificationTemplate;
 use Plugin;
 use Session;
-use GlpiPlugin\Webhook\Template;
 use Toolbox;
 
 class TemplateTranslation extends CommonDBTM {
@@ -102,11 +101,13 @@ SQL;
      * @param array  $data      Tag data from NotificationTarget (##tag## => value format)
      * @return string           Processed JSON payload
      */
-    public static function processPayloadTemplate(string $template, array $data): string {
-        $decoded = json_decode($template);
+    public static function processPayloadTemplate(string $template, array $data): string
+    {
+        $payload = NotificationTemplate::process($template, $data);
+        $decoded = json_decode($payload);
 
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return NotificationTemplate::process($template, $data);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $payload;
         }
 
         $processed = self::processDecodedPayloadTemplate($decoded, $data);
@@ -114,7 +115,8 @@ SQL;
         return json_encode($processed, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
     }
 
-    private static function processDecodedPayloadTemplate($value, array $data) {
+    private static function processDecodedPayloadTemplate($value, array $data)
+    {
         if (is_string($value)) {
             return NotificationTemplate::process($value, $data);
         }
@@ -149,9 +151,6 @@ SQL;
      * @return array              Tag data in ##tag## => value format
      */
     public static function getTagDataForItem(\CommonDBTM $item, string $event, array $options = []): array {
-        $itemtype = get_class($item);
-        $entity = $item->getEntityID();
-
         $target = NotificationTarget::getInstance($item, $event, $options);
         if (!$target) {
             return [];
@@ -217,7 +216,9 @@ SQL;
                             __('Payload') => [
                                 'type'  => 'textarea',
                                 'name'  => 'payload_template',
-                                'value' => Html::entities_deep($this->fields['payload_template'] ?? self::getDefaultTemplate()),
+                                'value' => Html::entities_deep(
+                                    $this->fields['payload_template'] ?? Template::getDefaultPayloadTemplate()
+                                ),
                                 'col_md'   => 12,
                                 'col_lg'   => 12,
                                 'rows'  => 15,
@@ -270,7 +271,9 @@ SQL;
 
         echo "<tr class='tab_bg_1'>";
         echo "<td colspan='4'>";
-        echo "<textarea name='payload_template' cols='100' rows='15'>" . Html::entities_deep($this->fields['payload_template'] ?? self::getDefaultTemplate()) . "</textarea>";
+        echo "<textarea name='payload_template' cols='100' rows='15'>" . Html::entities_deep(
+            $this->fields['payload_template'] ?? Template::getDefaultPayloadTemplate()
+        ) . "</textarea>";
         echo "</td></tr>";
 
         $this->showFormButtons($options);
@@ -334,10 +337,6 @@ SQL;
         }
 
         echo "</table></div>";
-    }
-
-    private static function getDefaultTemplate(): string {
-        return Template::getDefaultPayloadTemplate();
     }
 
     public static function showForTemplate(int $templateId): void {

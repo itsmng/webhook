@@ -49,4 +49,23 @@ class PluginWebhookWebhook extends \DbTestCase
       $this->boolean($id)->isFalse();
       $this->hasSessionMessages(ERROR, [__('Invalid URL', 'webhook')]);
    }
+
+   public function testInputValidationNormalizesHeaderRepresentations()
+   {
+      $webhook = new Webhook();
+      $cases = [
+         [['X-Array' => 'value'], '{"X-Array":"value"}'],
+         ['{"X-Json":"value"}', '{"X-Json":"value"}'],
+         ['invalid json', '[]'],
+         [null, '[]'],
+      ];
+
+      foreach ($cases as [$headers, $expected]) {
+         $input = $webhook->prepareInputForAdd([
+            'url' => 'https://example.com/hook',
+            'headers' => $headers,
+         ]);
+         $this->string($input['headers'])->isIdenticalTo($expected);
+      }
+   }
 }

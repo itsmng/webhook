@@ -4,6 +4,7 @@ namespace tests\units;
 
 use GlpiPlugin\Webhook\Config;
 use GlpiPlugin\Webhook\NotificationWebhook;
+use GlpiPlugin\Webhook\TemplateTranslation;
 use GlpiPlugin\Webhook\Webhook;
 
 class PluginWebhookNotificationWebhook extends \DbTestCase
@@ -49,6 +50,36 @@ class PluginWebhookNotificationWebhook extends \DbTestCase
       $this->string($capture['headers']['X-Webhook-Test'])->isIdenticalTo('header value');
       $this->array($capture['headers'])->hasKey('Content-Type');
       $this->string($capture['headers']['Content-Type'])->contains('application/json');
+
+      @unlink($captureFile);
+   }
+
+   public function testSendNotificationPostsRenderedRichTextAsValidJson()
+   {
+      $captureFile = tempnam(sys_get_temp_dir(), 'webhook-capture-');
+      $url = $this->startServer($captureFile);
+      $richText = '<p class="ticket-body">The user said "restart it".</p>'
+         . "\n<p>Path: C:\\Temp\\log.txt & details: caf\xC3\xA9</p>";
+      $payload = TemplateTranslation::processPayloadTemplate(
+         '{"description":"##ticket.description##"}',
+         ['##ticket.description##' => $richText]
+      );
+
+      $sent = (new NotificationWebhook())->sendNotification([
+         'recipient' => $url . '/receiver',
+         'sender' => 'POST',
+         'body_text' => $payload,
+      ]);
+
+      $this->integer($sent)->isIdenticalTo(1);
+
+      $capture = $this->readCapture($captureFile);
+      $this->string($capture['body'])->isIdenticalTo($payload);
+      $this->string($capture['body'])->contains('class=\\"ticket-body\\"');
+
+      $decoded = json_decode($capture['body'], true);
+      $this->integer(json_last_error())->isIdenticalTo(JSON_ERROR_NONE);
+      $this->string($decoded['description'])->isIdenticalTo($richText);
 
       @unlink($captureFile);
    }

@@ -139,11 +139,8 @@ SQL;
                 $eventId
             );
             $templateHookJs = sprintf(
-                "$.ajax({method: 'POST', url: '%s/plugins/webhook/ajax/dropdownTemplate.php', data: {itemtype: $(this).val(), value: $('#%s').val()}, success: function(html) { var select = $(html).find('select').first(); if (select.length) { select.attr('id', '%s').attr('name', 'plugin_webhook_templates_id'); $('#%s').replaceWith(select); } }});",
+                "$.ajax({method: 'POST', url: '%s/plugins/webhook/ajax/dropdownTemplate.php', data: {itemtype: $(this).val(), value: $('select[name=plugin_webhook_templates_id]').val()}, success: function(html) { var select = $('select[name=plugin_webhook_templates_id]'); var container = select.closest('.input-group'); if (container.length) { container.replaceWith(html); } else { select.replaceWith(html); } }});",
                 $CFG_GLPI['root_doc'],
-                $templateId,
-                $templateId,
-                $templateId
             );
             $changeHooksJs = $eventHookJs . $templateHookJs;
 

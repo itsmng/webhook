@@ -7,19 +7,19 @@ use NotificationEventAbstract;
 use NotificationEventInterface;
 use NotificationTarget;
 use NotificationTemplate;
-use Session;
-use Toolbox;
-use GlpiPlugin\Webhook\Template;
 
 class NotificationEventWebhook extends NotificationEventAbstract implements NotificationEventInterface {
     use Permissions;
 
     public static function getTargetFieldName() {
-        return 'email';
+        return 'users_id';
     }
 
     public static function getTargetField(&$data) {
-        return self::getTargetFieldName();
+        $field = self::getTargetFieldName();
+        $data[$field] = $data[$field] ?? null;
+
+        return $field;
     }
 
     public static function canCron() {
@@ -45,16 +45,61 @@ class NotificationEventWebhook extends NotificationEventAbstract implements Noti
         $notify_me,
         $emitter = null
     ) {
-        if (!Config::getValue('notifications_webhook', 1)) {
+        if (
+            $label !== ''
+            || !empty($options['is_private'])
+            || !Config::getValue('notifications_webhook', 1)
+        ) {
             return;
         }
 
-        $entity = $notificationtarget->getEntity();
-        $rules = Notification::getWebhookNotifications($event, $item->getType(), $entity);
+        $processed = [];
+        if (isset($options['processed'])) {
+            $processed = &$options['processed'];
+            unset($options['processed']);
+        }
 
-        foreach ($rules as $rule) {
+        $notificationId = (int)($data['id'] ?? 0);
+        if ($notificationId <= 0) {
+            return;
+        }
+
+        foreach (getAllDataFromTable('glpi_notificationtargets', ['notifications_id' => $notificationId]) as $target) {
+            $notificationtarget->addForTarget($target, $options);
+        }
+
+        $eligibleWebhookIds = [];
+        foreach ($notificationtarget->getTargets() as $recipient) {
+            $userId = (int)($recipient['users_id'] ?? 0);
+            if (
+                $userId <= 0
+                || !$notificationtarget->validateSendTo($event, $recipient, $notify_me, $emitter)
+            ) {
+                continue;
+            }
+
+            $eligibleWebhookIds += array_fill_keys(UserWebhook::getWebhooksForUser($userId), true);
+        }
+        if (!$eligibleWebhookIds) {
+            return;
+        }
+
+        $options['additionnaloption']['usertype'] = NotificationTarget::ANONYMOUS_USER;
+        $options['additionnaloption']['show_private'] = 0;
+
+        $entity = $notificationtarget->getEntity();
+        foreach (Notification::getWebhookNotifications($event, $item->getType(), $entity) as $rule) {
+            $ruleId = (int)$rule['id'];
+            $webhookId = (int)$rule['plugin_webhook_webhooks_id'];
+            if (isset($processed['rules'][$ruleId]) || !isset($eligibleWebhookIds[$webhookId])) {
+                continue;
+            }
+
             $webhook = new Webhook();
-            if (!$webhook->getFromDB($rule['plugin_webhook_webhooks_id']) || !$webhook->fields['is_active']) {
+            if (!$webhook->getFromDBByCrit([
+                'id' => $webhookId,
+                'is_active' => 1,
+            ] + getEntitiesRestrictCriteria(Webhook::getTable(), 'entities_id', $entity, true))) {
                 continue;
             }
 
@@ -64,35 +109,29 @@ class NotificationEventWebhook extends NotificationEventAbstract implements Noti
             if (!$translation->getFromDBByCrit([
                 'plugin_webhook_templates_id' => $rule['plugin_webhook_templates_id'],
                 'language' => $lang
-            ])) {
+            ]) && $lang !== '') {
                 $translation->getFromDBByCrit([
                     'plugin_webhook_templates_id' => $rule['plugin_webhook_templates_id'],
                     'language' => ''
                 ]);
             }
-            $payloadTemplate = $translation->fields['payload_template'] ?? Template::getDefaultPayloadTemplate();
+            $payload = TemplateTranslation::processPayloadTemplate(
+                $translation->fields['payload_template'] ?? Template::getDefaultPayloadTemplate(),
+                $notificationtarget->getForTemplate($event, $options)
+            );
 
-            $tags = [];
-            if (method_exists($notificationtarget, 'getForTemplate')) {
-                $tags = $notificationtarget->getForTemplate($event, $options);
-            }
-            $payload = TemplateTranslation::processPayloadTemplate($payloadTemplate, $tags);
-
-            $config = json_encode([
-                'timeout'    => (int)$webhook->fields['timeout'],
-                'verify_ssl' => (bool)$webhook->fields['verify_ssl'],
-            ]);
-
-            $queueRow = [
+            (new NotificationWebhook())->sendNotification([
                 'recipient' => $webhook->fields['url'],
                 'sender' => $webhook->fields['http_method'],
-                'sendername' => $config,
+                'sendername' => json_encode([
+                    'timeout' => (int)$webhook->fields['timeout'],
+                    'verify_ssl' => (bool)$webhook->fields['verify_ssl'],
+                ]),
                 'headers' => $webhook->fields['headers'],
                 'body_text' => $payload,
                 'mode' => 'webhook',
-            ];
-
-            (new NotificationWebhook())->sendNotification($queueRow);
+            ]);
+            $processed['rules'][$ruleId] = true;
         }
     }
 
