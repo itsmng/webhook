@@ -24,7 +24,8 @@ jobs:
 
       - name: Build project
         run: |
-          composer install --working-dir=webhook --no-dev
+          cd /home/runner/work/webhook/
+          cd webhook && composer install --no-dev && cd ..
           rm -rf \
             webhook/.atoum.php \
             webhook/.github \
