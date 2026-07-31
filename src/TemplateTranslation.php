@@ -110,7 +110,12 @@ SQL;
             return $payload;
         }
 
-        $processed = self::processDecodedPayloadTemplate($decoded, $data);
+        $decodedTemplate = json_decode($template);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return $payload;
+        }
+
+        $processed = self::processDecodedPayloadTemplate($decodedTemplate, $data);
 
         return json_encode($processed, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
     }

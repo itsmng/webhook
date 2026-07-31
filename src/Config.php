@@ -92,13 +92,16 @@ SQL;
     }
 
     public static function setValues(array $values): bool {
-        global $DB;
+        global $CFG_GLPI, $DB;
         foreach ($values as $key => $value) {
             if (countElementsInTable(self::getTable(), ['name' => $key])) {
                 $DB->update(self::getTable(), ['value' => $value], ['name' => $key]);
             } else {
                 $DB->insert(self::getTable(), ['name' => $key, 'value' => $value]);
             }
+        }
+        if (array_key_exists('notifications_webhook', $values)) {
+            $CFG_GLPI['notifications_webhook'] = (int)!empty($values['notifications_webhook']);
         }
         return true;
     }

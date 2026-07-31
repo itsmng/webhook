@@ -19,18 +19,53 @@ class PluginWebhookNotificationEventWebhook extends \DbTestCase
       $this->array($data)->isIdenticalTo(['users_id' => null]);
    }
 
-   public function testPrivateFollowupDoesNotEnterWebhookPipeline()
+   public function testPrivateFollowupUsesAuthorizedRecipientVisibility()
    {
       Config::setValues(['notifications_webhook' => '1']);
+      $webhookId = $this->addWebhook('Private followup webhook', 0, 1);
+      $this->addRule($webhookId, 0, 'add_followup');
+
+      $renderOptions = null;
       $target = $this->newMockInstance(\NotificationTarget::class);
+      $this->calling($target)->getEntity = 0;
+      $this->calling($target)->getForTemplate = function ($event, $options) use (&$renderOptions) {
+         $renderOptions = $options;
+         return [];
+      };
+      $data = $this->prepareRecipient($target, $webhookId, true, ['show_private' => 1]);
 
       $this->raiseWebhookEvent(
          $target,
          'add_followup',
-         ['followup_id' => 42, 'is_private' => 1]
+         ['followup_id' => 42, 'is_private' => 1],
+         $data
       );
 
-      $this->mock($target)->call('getEntity')->never();
+      $this->mock($target)->call('getForTemplate')->once();
+      $this->integer($renderOptions['additionnaloption']['usertype'])
+         ->isIdenticalTo(\NotificationTarget::ANONYMOUS_USER);
+      $this->integer($renderOptions['additionnaloption']['show_private'])->isIdenticalTo(1);
+   }
+
+   public function testPrivateFollowupWithoutAuthorizedRecipientDoesNotEnterWebhookPipeline()
+   {
+      Config::setValues(['notifications_webhook' => '1']);
+      $webhookId = $this->addWebhook('Unauthorized private followup webhook', 0, 1);
+      $this->addRule($webhookId, 0, 'add_followup');
+
+      $target = $this->newMockInstance(\NotificationTarget::class);
+      $this->calling($target)->getEntity = 0;
+      $data = $this->prepareRecipient($target, $webhookId, true, ['show_private' => 0]);
+      $this->calling($target)->validateSendTo = false;
+
+      $this->raiseWebhookEvent(
+         $target,
+         'add_followup',
+         ['followup_id' => 42, 'is_private' => 1],
+         $data
+      );
+
+      $this->mock($target)->call('getForTemplate')->never();
    }
 
    public function testPublicFollowupWithoutNotificationRecipientDoesNotEnterWebhookPipeline()
@@ -66,6 +101,126 @@ class PluginWebhookNotificationEventWebhook extends \DbTestCase
       );
 
       $this->mock($target)->call('getForTemplate')->never();
+   }
+
+   public function testSelfServiceWatcherCanTriggerAssignedWebhook()
+   {
+      global $DB;
+
+      $this->login();
+      $_SESSION += [
+         'INCOMING' => \CommonITILObject::INCOMING,
+         'ASSIGNED' => \CommonITILObject::ASSIGNED,
+         'PLANNED' => \CommonITILObject::PLANNED,
+         'SOLVED' => \CommonITILObject::SOLVED,
+         'CLOSED' => \CommonITILObject::CLOSED,
+      ];
+      Config::setValues(['notifications_webhook' => '1']);
+      $userId = (int)getItemByTypeName('User', 'post-only', true);
+      $profileId = (int)getItemByTypeName('Profile', 'Self-Service', true);
+      $this->integer($userId)->isGreaterThan(0);
+      $profile = new \Profile();
+      $this->boolean($profile->getFromDB($profileId))->isTrue();
+      $this->string($profile->fields['interface'])->isIdenticalTo('helpdesk');
+      $this->integer(countElementsInTable('glpi_profiles_users', [
+         'users_id' => $userId,
+      ]))->isIdenticalTo(1);
+      $this->integer(countElementsInTable('glpi_profiles_users', [
+         'users_id' => $userId,
+         'profiles_id' => $profileId,
+      ]))->isIdenticalTo(1);
+
+      $ticket = new \Ticket();
+      $ticketId = (int)$ticket->add([
+         'name' => 'Webhook notification for self-service watcher',
+         'content' => 'Self-service watcher webhook regression',
+         'entities_id' => 0,
+      ]);
+      $this->integer($ticketId)->isGreaterThan(0);
+      $ticketUser = new \Ticket_User();
+      $this->integer((int)$ticketUser->add([
+         'tickets_id' => $ticketId,
+         'users_id' => $userId,
+         'type' => \CommonITILActor::OBSERVER,
+         'use_notification' => 1,
+      ]))->isGreaterThan(0);
+      $this->boolean($DB->update(
+         'glpi_tickets',
+         ['content' => 'Self-service watcher webhook regression'],
+         ['id' => $ticketId]
+      ))->isTrue();
+      $this->boolean($ticket->getFromDB($ticketId))->isTrue();
+      $this->string($ticket->getField('content'))->isNotEmpty();
+      $this->integer(countElementsInTable('glpi_tickets_users', [
+         'tickets_id' => $ticketId,
+         'users_id' => $userId,
+         'type' => \CommonITILActor::OBSERVER,
+      ]))->isIdenticalTo(1);
+
+      $webhookId = $this->addWebhook('Self-service watcher webhook', 0, 1);
+      $ruleId = $this->addRule($webhookId, 0, 'add_followup');
+      $rule = new Notification();
+      $this->boolean($rule->getFromDB($ruleId))->isTrue();
+      $this->boolean($DB->update(
+         'glpi_plugin_webhook_template_translations',
+         ['payload_template' => '{"id":"##ticket.id##"}'],
+         [
+            'plugin_webhook_templates_id' => (int)$rule->fields['plugin_webhook_templates_id'],
+            'language' => '',
+         ]
+      ))->isTrue();
+      $relation = new UserWebhook();
+      $this->integer((int)$relation->add([
+         'users_id' => $userId,
+         'plugin_webhook_webhooks_id' => $webhookId,
+         'is_active' => 1,
+      ]))->isGreaterThan(0);
+
+      $notificationId = 2000000 + $webhookId;
+      $this->boolean($DB->insert('glpi_notificationtargets', [
+         'notifications_id' => $notificationId,
+         'items_id' => \Notification::OBSERVER,
+         'type' => \Notification::USER_TYPE,
+      ]))->isTrue();
+
+      $eventOptions = ['followup_id' => 123, 'is_private' => 0];
+      $target = \NotificationTarget::getInstance($ticket, 'add_followup', $eventOptions);
+      $this->object($target)->isInstanceOf(\NotificationTargetTicket::class);
+      $target->setMode('webhook');
+      $target->setEvent(NotificationEventWebhook::class);
+      $target->addForTarget([
+         'notifications_id' => $notificationId,
+         'items_id' => \Notification::OBSERVER,
+         'type' => \Notification::USER_TYPE,
+      ]);
+      $recipients = $target->getTargets();
+      $this->array($recipients)->hasKey($userId);
+      $this->integer((int)$recipients[$userId]['users_id'])->isIdenticalTo($userId);
+      $emitterId = (int)getItemByTypeName('User', TU_USER, true);
+      $this->integer($emitterId)->isNotEqualTo($userId);
+      $this->boolean(
+         $target->validateSendTo('add_followup', $recipients[$userId], false, $emitterId)
+      )->isTrue();
+      $this->boolean(
+         $target->validateSendTo('add_followup', $recipients[$userId], false, $userId)
+      )->isFalse();
+      $this->array(UserWebhook::getWebhooksForUser($userId))->contains($webhookId);
+      $target->clearAddressesList();
+
+      $processed = [];
+      NotificationEventWebhook::raise(
+         'add_followup',
+         $ticket,
+         $eventOptions + ['processed' => &$processed],
+         '',
+         ['id' => $notificationId],
+         $target,
+         new \NotificationTemplate(),
+         false,
+         $emitterId
+      );
+
+      $this->boolean(isset($processed['rules'][$ruleId]))->isTrue();
    }
 
    public function testDebugEventDoesNotEnterWebhookPipeline()
@@ -154,7 +309,7 @@ class PluginWebhookNotificationEventWebhook extends \DbTestCase
       $this->mock($target)->call('getForTemplate')->once();
    }
 
-   public function testTemplateRenderingUsesAnAnonymousPublicContext()
+   public function testTemplateRenderingUsesAnonymousContextWithRecipientPrivateVisibility()
    {
       Config::setValues(['notifications_webhook' => '1']);
       $webhookId = $this->addWebhook('Public rendering webhook', 0, 1);
@@ -167,7 +322,7 @@ class PluginWebhookNotificationEventWebhook extends \DbTestCase
          $renderOptions = $options;
          return [];
       };
-      $data = $this->prepareRecipient($target, $webhookId);
+      $data = $this->prepareRecipient($target, $webhookId, true, ['show_private' => 1]);
 
       $this->raiseWebhookEvent(
          $target,
@@ -176,7 +331,7 @@ class PluginWebhookNotificationEventWebhook extends \DbTestCase
             'is_private' => 0,
             'additionnaloption' => [
                'usertype' => \NotificationTarget::GLPI_USER,
-               'show_private' => 1,
+               'show_private' => 0,
             ],
          ],
          $data
@@ -184,7 +339,7 @@ class PluginWebhookNotificationEventWebhook extends \DbTestCase
 
       $this->integer($renderOptions['additionnaloption']['usertype'])
          ->isIdenticalTo(\NotificationTarget::ANONYMOUS_USER);
-      $this->integer($renderOptions['additionnaloption']['show_private'])->isIdenticalTo(0);
+      $this->integer($renderOptions['additionnaloption']['show_private'])->isIdenticalTo(1);
    }
 
    private function raiseWebhookEvent(
@@ -234,13 +389,19 @@ class PluginWebhookNotificationEventWebhook extends \DbTestCase
       return (int)$id;
    }
 
-   private function prepareRecipient($target, int $webhookId, bool $attachWebhook = true): array
+   private function prepareRecipient(
+      $target,
+      int $webhookId,
+      bool $attachWebhook = true,
+      array $additionnalOptions = []
+   ): array
    {
       global $DB;
 
       $userId = (int)getItemByTypeName('User', TU_USER, true);
       $target->setEvent(NotificationEventWebhook::class);
       $this->calling($target)->validateSendTo = true;
+      $this->calling($target)->addAdditionnalUserInfo = $additionnalOptions;
       $target->addToRecipientsList(['users_id' => $userId]);
 
       if ($attachWebhook) {
@@ -262,17 +423,17 @@ class PluginWebhookNotificationEventWebhook extends \DbTestCase
       return ['id' => $notificationId];
    }
 
-   private function addRule(int $webhookId, int $entitiesId = 0): void
+   private function addRule(int $webhookId, int $entitiesId = 0, string $event = 'new'): int
    {
       $template = new Template();
       $this->boolean($template->getFromDBByCrit(['itemtype' => 'Ticket']))->isTrue();
 
       $notification = new Notification();
       $id = $notification->add([
-         'name' => 'Rule for new',
+         'name' => 'Rule for ' . $event,
          'plugin_webhook_webhooks_id' => $webhookId,
          'itemtype' => 'Ticket',
-         'event' => 'new',
+         'event' => $event,
          'entities_id' => $entitiesId,
          'is_recursive' => 1,
          'is_active' => 1,
@@ -280,5 +441,7 @@ class PluginWebhookNotificationEventWebhook extends \DbTestCase
       ]);
 
       $this->integer((int)$id)->isGreaterThan(0);
+
+      return (int)$id;
    }
 }

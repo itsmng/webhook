@@ -47,7 +47,6 @@ class NotificationEventWebhook extends NotificationEventAbstract implements Noti
     ) {
         if (
             $label !== ''
-            || !empty($options['is_private'])
             || !Config::getValue('notifications_webhook', 1)
         ) {
             return;
@@ -68,7 +67,7 @@ class NotificationEventWebhook extends NotificationEventAbstract implements Noti
             $notificationtarget->addForTarget($target, $options);
         }
 
-        $eligibleWebhookIds = [];
+        $eligibleWebhookOptions = [];
         foreach ($notificationtarget->getTargets() as $recipient) {
             $userId = (int)($recipient['users_id'] ?? 0);
             if (
@@ -78,20 +77,30 @@ class NotificationEventWebhook extends NotificationEventAbstract implements Noti
                 continue;
             }
 
-            $eligibleWebhookIds += array_fill_keys(UserWebhook::getWebhooksForUser($userId), true);
+            foreach (UserWebhook::getWebhooksForUser($userId) as $webhookId) {
+                $webhookId = (int)$webhookId;
+                $recipientOptions = $recipient['additionnaloption'] ?? [];
+                if (!isset($eligibleWebhookOptions[$webhookId])) {
+                    $eligibleWebhookOptions[$webhookId] = $recipientOptions;
+                    continue;
+                }
+
+                // A webhook shared by multiple eligible recipients uses the
+                // highest visibility granted to one of its assigned users.
+                if (!empty($recipientOptions['show_private'])) {
+                    $eligibleWebhookOptions[$webhookId]['show_private'] = 1;
+                }
+            }
         }
-        if (!$eligibleWebhookIds) {
+        if (!$eligibleWebhookOptions) {
             return;
         }
-
-        $options['additionnaloption']['usertype'] = NotificationTarget::ANONYMOUS_USER;
-        $options['additionnaloption']['show_private'] = 0;
 
         $entity = $notificationtarget->getEntity();
         foreach (Notification::getWebhookNotifications($event, $item->getType(), $entity) as $rule) {
             $ruleId = (int)$rule['id'];
             $webhookId = (int)$rule['plugin_webhook_webhooks_id'];
-            if (isset($processed['rules'][$ruleId]) || !isset($eligibleWebhookIds[$webhookId])) {
+            if (isset($processed['rules'][$ruleId]) || !isset($eligibleWebhookOptions[$webhookId])) {
                 continue;
             }
 
@@ -115,9 +124,15 @@ class NotificationEventWebhook extends NotificationEventAbstract implements Noti
                     'language' => ''
                 ]);
             }
+            $renderOptions = $options;
+            $renderOptions['additionnaloption'] = array_merge(
+                $renderOptions['additionnaloption'] ?? [],
+                $eligibleWebhookOptions[$webhookId],
+                ['usertype' => NotificationTarget::ANONYMOUS_USER]
+            );
             $payload = TemplateTranslation::processPayloadTemplate(
                 $translation->fields['payload_template'] ?? Template::getDefaultPayloadTemplate(),
-                $notificationtarget->getForTemplate($event, $options)
+                $notificationtarget->getForTemplate($event, $renderOptions)
             );
 
             (new NotificationWebhook())->sendNotification([

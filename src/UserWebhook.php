@@ -58,6 +58,17 @@ class UserWebhook extends CommonDBRelation
         return self::canConfig();
     }
 
+    public static function getAssignableWebhookCondition(): array
+    {
+        return ['is_active' => 1]
+            + getEntitiesRestrictCriteria(
+                Webhook::getTable(),
+                'entities_id',
+                Session::getActiveEntity(),
+                true
+            );
+    }
+
     public static function install()
     {
         global $DB;
@@ -147,10 +158,7 @@ SQL;
                                     'type' => 'select',
                                     'name' => 'plugin_webhook_webhooks_id',
                                     'itemtype' => Webhook::class,
-                                    'condition' => [
-                                        'is_active' => 1,
-                                        'entities_id' => $user->getEntityID(),
-                                    ],
+                                    'condition' => self::getAssignableWebhookCondition(),
                                     'display_emptychoice' => true,
                                 ],
                                 __('Active') => [
@@ -184,7 +192,8 @@ SQL;
                 echo Html::hidden('users_id', ['value' => $ID]);
                 Dropdown::show('PluginWebhookWebhook', [
                     'name' => 'plugin_webhook_webhooks_id',
-                    'entity' => $user->getEntityID(),
+                    'entity' => Session::getActiveEntity(),
+                    'entity_sons' => Session::getIsActiveEntityRecursive(),
                     'comments' => false,
                     'condition' => ['is_active' => 1]
                 ]);

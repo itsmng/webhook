@@ -80,6 +80,7 @@ function plugin_init_webhook()
 
    // Register notification mode
    Notification_NotificationTemplate::registerMode('webhook', __('Webhook', 'webhook'), 'webhook');
+   $CFG_GLPI['notifications_webhook'] = (int) Config::getValue('notifications_webhook', 1);
 }
 
 /**

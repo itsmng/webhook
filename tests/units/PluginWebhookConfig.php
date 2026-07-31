@@ -26,10 +26,11 @@ class PluginWebhookConfig extends \DbTestCase
 
    public function testPluginInitRegistersHooksAndLegacyAliases()
    {
-      global $PLUGIN_HOOKS;
+      global $CFG_GLPI, $PLUGIN_HOOKS;
 
       $PLUGIN_HOOKS = [];
       $_SESSION['glpiactiveprofile']['plugin_webhook_config'] = UPDATE;
+      Config::setValues(['notifications_webhook' => '1']);
 
       \plugin_init_webhook();
 
@@ -40,6 +41,7 @@ class PluginWebhookConfig extends \DbTestCase
          ->isIdenticalTo(\GlpiPlugin\Webhook\WebhookMenu::class);
       $this->string($PLUGIN_HOOKS['config_page']['webhook'])
          ->isIdenticalTo('front/config.form.php');
+      $this->integer($CFG_GLPI['notifications_webhook'])->isIdenticalTo(1);
       $this->object(new \PluginWebhookWebhook())->isInstanceOf(Webhook::class);
       $this->object(new \PluginWebhookTemplateTranslation())->isInstanceOf(TemplateTranslation::class);
       $this->object(new \PluginWebhookNotificationWebhook())->isInstanceOf(\GlpiPlugin\Webhook\NotificationWebhook::class);
@@ -71,11 +73,16 @@ class PluginWebhookConfig extends \DbTestCase
 
    public function testValuesCanBeUpdatedAndInserted()
    {
+      global $CFG_GLPI;
+
       Config::setValues([
+         'notifications_webhook' => '0',
          'webhook_default_timeout' => '17',
          'custom_webhook_setting' => 'custom value',
       ]);
 
+      $this->string(Config::getValue('notifications_webhook'))->isIdenticalTo('0');
+      $this->integer($CFG_GLPI['notifications_webhook'])->isIdenticalTo(0);
       $this->string(Config::getValue('webhook_default_timeout'))->isIdenticalTo('17');
       $this->string(Config::getValue('custom_webhook_setting'))->isIdenticalTo('custom value');
       $this->string(Config::getValue('missing_setting', 'fallback'))->isIdenticalTo('fallback');

@@ -30,7 +30,38 @@ class PluginWebhookUserWebhook extends \DbTestCase
          ->isIdenticalTo([$activeWebhookId, $inactiveWebhookId]);
    }
 
-   private function addWebhook(string $name): int
+   public function testAssignableWebhookConditionUsesActiveEntityInsteadOfUserEntity()
+   {
+      global $DB;
+
+      $this->login();
+      $this->setEntity('_test_child_1', false);
+
+      $parentId = (int)getItemByTypeName('Entity', '_test_root_entity', true);
+      $childId = (int)getItemByTypeName('Entity', '_test_child_1', true);
+      $recursiveParentId = $this->addWebhook('Recursive parent webhook', $parentId, 1);
+      $childIdWebhook = $this->addWebhook('Child webhook', $childId, 0);
+      $this->addWebhook('Inactive child webhook', $childId, 0, 0);
+
+      $rows = iterator_to_array($DB->request([
+         'SELECT' => ['id'],
+         'FROM' => Webhook::getTable(),
+         'WHERE' => UserWebhook::getAssignableWebhookCondition(),
+         'ORDER' => 'id ASC',
+      ]));
+      $ids = array_map('intval', array_column($rows, 'id'));
+
+      $this->array($ids)->contains($recursiveParentId);
+      $this->array($ids)->contains($childIdWebhook);
+      $this->integer(count($ids))->isIdenticalTo(2);
+   }
+
+   private function addWebhook(
+      string $name,
+      int $entitiesId = 0,
+      int $isRecursive = 1,
+      int $isActive = 1
+   ): int
    {
       $webhook = new Webhook();
       $id = $webhook->add([
@@ -38,11 +69,11 @@ class PluginWebhookUserWebhook extends \DbTestCase
          'url' => 'https://example.com/' . strtolower(str_replace(' ', '-', $name)),
          'http_method' => 'POST',
          'headers' => '{}',
-         'is_active' => 1,
+         'is_active' => $isActive,
          'timeout' => 5,
          'verify_ssl' => 1,
-         'entities_id' => 0,
-         'is_recursive' => 1,
+         'entities_id' => $entitiesId,
+         'is_recursive' => $isRecursive,
       ]);
 
       $this->integer((int)$id)->isGreaterThan(0);
